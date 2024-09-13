@@ -12,6 +12,77 @@ and Message-Driven Beans (MDBs) for the back-end business logic and persistence 
 This project specifically targets Red Hat JBoss EAP and OpenShift, and does not build other optional components for other
 app servers.
 
+## Setup Instructions for Windows
+
+1. **Requirements Softwares**
+
+    - Windows 10/11
+    - Git
+    - JDK 8
+    - Maven
+    - MySQL 8+
+    - MySQL JDBC Connector
+    - JBoss EAP 7.40
+
+2. **Install Jboss EAP 7.4**
+
+    java -jar jboss-eap-7.4.0-installer.jar
+
+3. **Start Jboss server with standalone-full**
+
+    >standalone.bat -c standalone-full.xml
+
+4. **To Install JDBC Driver install**
+    Start Jboss cli with below command
+    > jboss-cli.bat
+
+    -- add jdbc driver as below
+
+    [disconnected /] module add --name=com.mysql --resources=D:\Software\mysql-connector-j-8.4.0\mysql-connector-j-8.4.0.jar --dependencies=javax.transaction.api,sun.jdk,ibm.jdk,javaee.api,javax.api
+
+5. **Register JDBC Driver with below details**
+
+    -- register driver from admin console (use the driver class and data source class from here) 
+    -- admin console url would be  -  localhost:9990/
+    /subsystem=datasources/jdbc-driver=mysql:add(driver-name=mysql,driver-module-name=com.mysql,driver-xa-datasource-class-name=com.mysql.cj.jdbc.MysqlXADataSource, driver-class-name=com.mysql.cj.jdbc.Driver)
+
+6. **Create queue and Topics**
+
+    Open Jboss CLI with command and connect to admin console
+        > jboss-cli.bat
+        > connect
+
+    Excecute below commands to create queue and Topic
+        >jms-queue add --queue-address=TradeBrokerQueue --entries=[queue/TradeBrokerQueue jms/queue/TradeBrokerQueue java:jboss/exported/jms/queue/TradeBrokerQueue]
+
+        >jms-topic add --topic-address=TradeStreamerTopic --entries=[topic/TradeStreamerTopic jms/topic/TradeStreamerTopic java:jboss/exported/jms/topic/TradeStreamerTopic]
+
+7. **Build the application code and deploy**
+        > mvn clean install
+
+  The result will be an EAR file located in the javaee6/assemblies/daytrader-ear/target directory which can be copied to JBoss EAP's standalone/deployments directory.
+
+    Then, startup JBoss EAP using the Full profile, e.g.
+
+    > bin/standalone.sh -c standalone-full.xml
+
+    And access the app using http://<hostname>/daytrader, for example http://localhost:8080/daytrader
+
+    Then follow the instructions to Initialize DayTrader as described earlier in this document.
+
+8. **Initialize Daytrader application**
+
+Before using the app, you must create and populate the Database using these steps.
+
+    Navigate to the DayTrader app in browser. You should see the welcome screen.
+    Navigate to Configuration and click (Re)-create DayTrader Database Tables and Indexes to create the tables.
+    Scale the web pod count to 0 and back to 1 to reboot EAP (e.g. oc scale --replicas=0 dc/web && oc scale --replicas=1 dc/web)
+    Navigate to Configuration and click (Re)-populate DayTrader Database
+
+Then you can go to Trading & Portfolios, login with the default user ( username: uid:0 password: xxx), click on ticker symbols (such as s:130) and click buy, or head to Portfolio and sell stocks.
+
+There are other things you can do too, like switch it from using direct JDBC to using (stateless) EJBs, and change some other parameters via the Configuration -> Configure DayTrader run-time parameters.
+
 
 
 Deploying to OpenShift
